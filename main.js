@@ -54,7 +54,7 @@ function createDir(filePath, callback) {
             if(err.code === 'ENOENT') { // папка еще не существует
                 fs.mkdir(dirPath, function (err) { //создаем папку с литерой
                     if (err) {
-                        if (err.code === 'EEXIST') console.log(dirPath, ': has already exist'); // todo эта проверка нужна??
+                        if (err.code === 'EEXIST'){}  //console.log(dirPath, ': has already exist'); // todo эта проверка нужна??
                         else console.log(dirPath, ':', err.code);
                     }
                     //else
@@ -87,6 +87,9 @@ function movingFile(filePath, dirPath) {
         fs.copyFile(filePath, dirPath + '/' + getFileName(filePath), (err) => { // copyFile(что, куда)
             if (err) console.log('movingFile: ', err.message); //throw err.message;
             //console.log(getFileName(filePath) + ' was copied');
+            console.log('--------------movingFile----------------');
+            console.log('filePath = ', filePath);
+            console.log('куда = ', dirPath + '\\' + getFileName(filePath));
             //removeFile(filePath);
         });
     }
