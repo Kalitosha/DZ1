@@ -1,24 +1,28 @@
+const process = require('process');
 const fs = require('fs');
 const path = require('path');
 
-const workingDirectory = './dir_1';
+const sourceDir = process.argv[2] || './dir_1';  // [2] путь к исходной папке = sourceDir
+const finalDir = process.argv[3] || './collection'; // [3] путь к итоговой папке = finalDir
+const dirDelete = process.argv[4]; // [4] необходимость удаления исходной = dirDelete (-d)
 
 function doIt(callback) {
-    fs.mkdir('./collection', function (err) { //создаем общую папку
+    fs.mkdir(finalDir , function (err) { //создаем общую папку
         if (err) {
             if (err === 'EEXIST') console.log('dir has already exist');
             else return 1; //console.error(err);
         } else
-            console.log("Directory \"collection\" created successfully!");
+            console.log(`Directory \"${finalDir}\" created successfully!`);
     });
 
-    recursiveWalk(workingDirectory, function (arrFilePaths) {
+    recursiveWalk(sourceDir, function (arrFilePaths) {
         // нужно создать папку и переместить файл
         for(let i=0; i<arrFilePaths.length; i++) {
-            //console.log("arrFilePaths[", i, '] =', arrFilePaths[i]);
             createDir(arrFilePaths[i], function (){} );
         }
+        console.log('callback in doIt');
     });
+    return callback();
 }
 
 function recursiveWalk(currentDirPath, callback) { // поиск в ширину
@@ -65,7 +69,6 @@ function createDir(filePath, callback) {
                 console.log('createDir ', err.message);
             }
         }else if (stat) { // папка уже существует
-            //console.log(dirPath, ': has already exist');
             callback = movingFile(filePath, dirPath);
         }
     });
@@ -73,13 +76,12 @@ function createDir(filePath, callback) {
 
 function getDirPath(filePath) {
     let fName = getFileName(filePath); // вытаскиваем имя файла из пути
-
     let firstLetter = fName.charAt(0).toUpperCase();
-    return path.join('./collection', firstLetter); // делаем корректный URL
+    return path.join(finalDir, firstLetter); // делаем корректный URL
 }
 
 function getFileName(filePath) {
-    return filePath.split('\\').pop();
+    return path.basename(filePath);
 }
 
 function movingFile(filePath, dirPath) {
@@ -87,39 +89,15 @@ function movingFile(filePath, dirPath) {
         fs.copyFile(filePath, dirPath + '/' + getFileName(filePath), (err) => { // copyFile(что, куда)
             if (err) console.log('movingFile: ', err.message); //throw err.message;
             //console.log(getFileName(filePath) + ' was copied');
-            console.log('--------------movingFile----------------');
-            console.log('filePath = ', filePath);
-            console.log('куда = ', dirPath + '\\' + getFileName(filePath));
-            //removeFile(filePath);
         });
     }
-
 }
 /***********************************************************************/
-function removeFiles(arrFilePaths, callback) {
-    arrFilePaths.forEach(function (filePath) {
-        fs.unlink(filePath, function (err) {
-            if (err && err.code === 'ENOENT') {
-                // file doens't exist
-                console.info(filePath + " doesn't exist");
-            } else if (err) {
-                // other errors, e.g. maybe we don't have enough permission
-                console.log('removeFile ', err.message);
-            } else {
-                //console.info(filePath + ' was removed');
-            }
-        });
-    });
-    callback();
-}
-
 function removeFile(filePath) {
     fs.unlink(filePath, function (err) {
-        if (err && err.code === 'ENOENT') {
-            // file doens't exist
+        if (err && err.code === 'ENOENT') {// file doesn't exist
             console.info(filePath + " doesn't exist");
-        } else if (err) {
-            // other errors, e.g. maybe we don't have enough permission
+        } else if (err) { // other errors
             console.log('removeFile ', err.message);
         } else {
             //console.info(filePath + ' was removed');
@@ -127,7 +105,8 @@ function removeFile(filePath) {
     });
 }
 
-function removeDirRecursive(currentDirPath, arrDirPaths, arrFilePaths, callback){ //todo работает некорректно
+function removeDirRecursive(currentDirPath, arrDirPaths, arrFilePaths, callback){
+    console.log('removeDirRecursive: ');
     fs.readdir(currentDirPath, function (err, files) { // readdir=асинхрон. Считывает содержимое каталога.
         if (err) {
             throw new Error(err);
@@ -145,35 +124,42 @@ function removeDirRecursive(currentDirPath, arrDirPaths, arrFilePaths, callback)
                     removeDirRecursive(filePath, arrDirPaths, arrFilePaths, callback); // спускаемся ниже и повторяем
                 }
             } catch (err) {
-                console.log('removeDirRecursive ', err.message);
+                console.log('removeDirRecursive: ', err.message);
                 return 1;
             }
         });
     });
     if (currentDirPath === 'dir_1\\dir_1_2\\dir_1_2_3\\dir_1_2_3_3')
-    callback(); //todo его надо вызывать при последней итерации? но как это нормально сделать??????
+    return callback(); //todo его надо вызывать при последней итерации? но как это нормально сделать??????
 }
 
 let arrFilePaths = [];
 let arrDirPaths = [];
-arrDirPaths.push(workingDirectory); // todo не очень хорошая строчка, как ее заменить?
+arrDirPaths.push(sourceDir); // todo не очень хорошая строчка, как ее заменить?
 
-doIt(/*removeDirRecursive(workingDirectory,
-                        arrDirPaths,
-                        arrFilePaths,
-                        // function() {
-                        //     removeFiles(arrFilePaths, function () {
-                        //         for (let i = arrDirPaths.length - 1; i >= 0; i--) {
-                        //             console.log("arrDirPaths[", i, '] =', arrDirPaths[i]);
-                        //             fs.rmdirSync(arrDirPaths[i]);
-                        //         }
-                        //     });
-                        // }
-                        function() {
-                            for (let i = arrDirPaths.length - 1; i >= 0; i--) {
-                                console.log("arrDirPaths[", i, '] =', arrDirPaths[i]);
-                                fs.rmdirSync(arrDirPaths[i]);
-                            }
-                        }
-);*/
-);
+doIt( ()=> { test1();} );
+
+function test1() {
+    console.log('test1');
+}
+
+// doIt( ()=> { removeDirRecursive(sourceDir,
+//                                 arrDirPaths,
+//                                 arrFilePaths,
+//                                 // function() {
+//                                 //     removeFiles(arrFilePaths, function () {
+//                                 //         for (let i = arrDirPaths.length - 1; i >= 0; i--) {
+//                                 //             console.log("arrDirPaths[", i, '] =', arrDirPaths[i]);
+//                                 //             fs.rmdirSync(arrDirPaths[i]);
+//                                 //         }
+//                                 //     });
+//                                 // }
+//                                 function() {
+//                                     for (let i = arrDirPaths.length - 1; i >= 0; i--) {
+//                                         console.log("arrDirPaths[", i, '] =', arrDirPaths[i]);
+//                                         fs.rmdirSync(arrDirPaths[i]);
+//                                     }
+//                                 }
+//                             )}
+// );
+
