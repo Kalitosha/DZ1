@@ -1,7 +1,9 @@
 {
   "name": "DZ1",
   "version": "1.0.0",
-  "dependencies": {
-    
+  "main": "main.js",
+  "dependencies": {},
+  "devDependencies": {
+    "eslint": "^5.5.0"
   }
 }
